@@ -2,8 +2,7 @@
 
 # CC Switch DeepSeek
 > **注意：** 本项目基于 [farion1231/cc-switch](https://github.com/farion1231/cc-switch/tree/main) 修改。上游版本及官方网站见 [ccswitch.io](https://ccswitch.io)。
-
-## 新增内容：**DeepSeek 代理** — 内置本地 DeepSeek 代理服务（OpenAI Responses API ↔ DeepSeek Chat Completions API 协议转换）。
+# CC Switch DeepSeek
 
 ### Claude Code、Codex、Gemini CLI、OpenCode、OpenClaw 和 Hermes Agent 的全方位管理工具
 
