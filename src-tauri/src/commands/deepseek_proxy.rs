@@ -7,6 +7,7 @@ use crate::settings;
 use crate::store::AppState;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use tauri::Manager;
 
 /// DeepSeek 代理状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,41 +18,58 @@ pub struct DeepSeekProxyStatus {
     pub pid: Option<u32>,
 }
 
-fn resolve_proxy_js_path() -> Option<PathBuf> {
-    // 1. 环境变量覆盖（开发模式）
+fn resolve_proxy_js_path(app_handle: Option<&tauri::AppHandle>) -> Option<PathBuf> {
+    let check = |dir: &str, p: &std::path::Path| -> bool {
+        let exists = p.exists();
+        log::info!("DeepSeek proxy path check [{dir}]: {:?} -> {}", p, exists);
+        exists
+    };
+
+    // 1. 环境变量覆盖
     if let Ok(path) = std::env::var("DEEPSEEK_PROXY_PATH") {
         let p = PathBuf::from(&path);
-        if p.join("index.js").exists() {
-            return Some(p.join("index.js"));
+        let candidate = p.join("index.js");
+        if check("env", &candidate) {
+            return Some(candidate);
         }
-        if p.exists() {
+        if check("env(raw)", &p) {
             return Some(p);
         }
     }
 
-    // 2. 开发模式：相对路径查找（源码目录下的 cswitch-deepseek-main）
-    if let Ok(cwd) = std::env::current_dir() {
-        // cswitch-deepseek-main 与 cc-switch-main 同级
-        let candidate = cwd
-            .parent()
-            .map(|p| p.join("ccswitch-deepseek-main").join("index.js"));
-        if let Some(ref p) = candidate {
-            if p.exists() {
-                return candidate;
-            }
-        }
-    }
-
-    // 3. 开发模式：在 cc-switch-main 目录内查找
+    // 2. exe 同级目录（最可靠：便携版/开发版都适用）
     if let Ok(exe) = std::env::current_exe() {
         if let Some(exe_dir) = exe.parent() {
             let candidate = exe_dir.join("ccswitch-deepseek-main").join("index.js");
-            if candidate.exists() {
+            if check("exe_dir", &candidate) {
                 return Some(candidate);
             }
         }
     }
 
+    // 3. Tauri 资源目录（正式打包/MSI 安装版）
+    if let Some(app) = app_handle {
+        if let Ok(resource_dir) = app.path().resource_dir() {
+            let candidate = resource_dir.join("resources").join("deepseek-proxy").join("index.js");
+            if check("resource_dir", &candidate) {
+                return Some(candidate);
+            }
+        }
+    }
+
+    // 4. 开发模式：cwd parent（源码目录布局）
+    if let Ok(cwd) = std::env::current_dir() {
+        let candidate = cwd
+            .parent()
+            .map(|p| p.join("ccswitch-deepseek-main").join("index.js"));
+        if let Some(ref p) = candidate {
+            if check("cwd_parent", p) {
+                return candidate;
+            }
+        }
+    }
+
+    log::warn!("DeepSeek proxy index.js not found in any location");
     None
 }
 
@@ -78,6 +96,7 @@ pub async fn get_deepseek_proxy_status(
 /// 启动 DeepSeek 代理
 #[tauri::command]
 pub async fn start_deepseek_proxy(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<DeepSeekProxyStatus, String> {
     let config = settings::get_deepseek_proxy_config().unwrap_or_default();
@@ -86,8 +105,16 @@ pub async fn start_deepseek_proxy(
         return Err("DeepSeek API Key 未配置，请先在设置中填写 API Key".to_string());
     }
 
-    let js_path = resolve_proxy_js_path().ok_or_else(|| {
-        "找不到 DeepSeek 代理脚本 (index.js)，请确认 cswitch-deepseek-main 目录存在".to_string()
+    let js_path = resolve_proxy_js_path(Some(&app)).ok_or_else(|| {
+        let exe = std::env::current_exe()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+        format!(
+            "找不到 DeepSeek 代理脚本 (index.js)\n\
+             exe 位置: {}\n\
+             请确认 resources/deepseek-proxy 目录存在",
+            exe
+        )
     })?;
 
     let js_dir = js_path.parent().unwrap_or(&js_path);
