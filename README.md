@@ -1,13 +1,9 @@
 <div align="center">
 
-# CC Switch
+# CC Switch DeepSeek
 
-### The All-in-One Manager for Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw & Hermes Agent
-
-[![Version](https://img.shields.io/github/v/release/farion1231/cc-switch?color=blue&label=version)](https://github.com/farion1231/cc-switch/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/farion1231/cc-switch/releases)
-[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-orange.svg)](https://tauri.app/)
-[![Downloads](https://img.shields.io/github/downloads/farion1231/cc-switch/total)](https://github.com/farion1231/cc-switch/releases/latest)
+> **Note：** This project is based on [farion1231/cc-switch](https://github.com/farion1231/cc-switch/tree/main) 。 See ccswitch.io for upstream versions and the official website [ccswitch.io](https://ccswitch.io)。
+## New features：**DeepSeek Proxy** — Built-in DeepSeek local DeepSeek proxy service (OpenAI Responses API, DeepSeek Chat Completions API protocol conversion)。
 
 <a href="https://trendshift.io/repositories/15372" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15372" alt="farion1231%2Fcc-switch | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
